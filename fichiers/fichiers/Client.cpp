@@ -5,6 +5,11 @@
 #include <ws2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
+#include <iostream>
+#include <cstring>
+
+using namespace std;
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
 #pragma comment (lib, "Ws2_32.lib")
@@ -45,35 +50,73 @@ int __cdecl main(int argc, char **argv)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
+	bool validIp = false;
+	bool validPort = false;
+
+	string ip;
+	string port;
+	string nom;
+	string mdp;
+	struct sockaddr_in sa;
+	//use get_s instead of cin to avoid shenanigans
+	while (!validIp) {
+		printf("Enter your IP address: \n");
+		getline(std::cin, ip);
+		if (inet_pton(AF_INET, ip.c_str(), &(sa.sin_addr)) == 1) {
+			validIp = true;
+		}
+	}
+
+	while (!validPort) {
+		printf("Enter your port address: \n");
+		getline(std::cin, port);
+		if (stoi(port) >= 5000 && stoi(port) <= 5050) {
+			validPort = true;
+		}
+	}
+
+	printf("Enter your username: \n");
+	getline(std::cin, nom);
+
+	printf("Enter your password: \n");
+	getline(std::cin, mdp);
+
 	// Resolve the server address and port
-	iResult = getaddrinfo(argv[1], DEFAULT_PORT, &hints, &result);
+	iResult = getaddrinfo(argv[1], port.c_str(), &hints, &result);
 	if (iResult != 0) {
 		printf("getaddrinfo failed with error: %d\n", iResult);
 		WSACleanup();
 		//return 9;
 	}
-
+	
 	// Attempt to connect to an address until one succeeds
-	for (ptr = result; ptr != NULL; ptr = ptr->ai_next) {
+	//for (ptr = result; ptr != NULL; ptr = ptr->ai_next) {
 
 		// Create a SOCKET for connecting to server
-		ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype,
+	ptr = result;
+	
+	ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype,
 			ptr->ai_protocol);
+		
 		if (ConnectSocket == INVALID_SOCKET) {
 			printf("socket failed with error: %ld\n", WSAGetLastError());
 			WSACleanup();
-			//return 2;
 		}
 
 		// Connect to server.
+
+		//PSTR s = const_cast<char *>(ip.c_str());
+		//ptr->ai_addr = sa;
+
+		inet_ntop(AF_INET, &(sa.sin_addr), PSTR(ptr->ai_addr), INET_ADDRSTRLEN);
 		iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
 		if (iResult == SOCKET_ERROR) {
 			closesocket(ConnectSocket);
 			ConnectSocket = INVALID_SOCKET;
-			continue;
+			//continue;
 		}
-		break;
-	}
+		//break;
+	//}
 
 	freeaddrinfo(result);
 

@@ -61,25 +61,22 @@ int __cdecl main(void)
 	bool validIp = false; 
 	bool validPort = false;
 
-
 	string ip;
-	char port[5] = "";
+	string port;
 	//use get_s instead of cin to avoid shenanigans
 	while (!validIp){
 		printf("Enter your IP address: \n");
-		//char* isLegit = fgets(ip, 15, stdin);
 		getline(std::cin, ip);
 		struct sockaddr_in sa;
 		if (inet_pton(AF_INET, ip.c_str(), &(sa.sin_addr)) == 1) {
 			validIp = true; 
-		
 		}
 	}
 
 	while (!validPort) {
 		printf("Enter your port address: \n");
-		gets_s(port, 5);
-		if (atoi(port) >= 5000 && atoi(port) <= 5050) {
+		getline(std::cin, port);
+		if (stoi(port) >= 5000 && stoi(port) <= 5050) {
 			validPort = true;
 		}
 	}
