@@ -7,6 +7,10 @@
 #include <ws2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <iostream>
+#include <string>
+
+using namespace std;
 
 // Need to link with Ws2_32.lib
 #pragma comment (lib, "Ws2_32.lib")
@@ -53,7 +57,31 @@ int __cdecl main(void)
 
 	// Create a SOCKET for connecting to server
 	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	printf("server has started...");
+	printf("server has started...\n");
+	bool validIp = false; 
+	bool validPort = false;
+	string ip = "";
+	int port = 0;
+	//use get_s instead of cin to avoid shenanigans
+	while (!validIp){
+		printf("Enter your IP address: \n");
+		cin >> ip;
+		struct sockaddr_in sa;
+		if (inet_pton(AF_INET, ip.c_str(), &(sa.sin_addr)) == 1) {
+			validIp = true; 
+		}
+	}
+
+	while (!validPort) {
+		printf("Enter your port address: \n");
+		cin >> port;
+		if (port >= 5000 && port <= 5050) {
+			validPort = true;
+		}
+	}
+
+	
+
 	if (ListenSocket == INVALID_SOCKET) {
 		printf("socket failed with error: %ld\n", WSAGetLastError());
 		freeaddrinfo(result);

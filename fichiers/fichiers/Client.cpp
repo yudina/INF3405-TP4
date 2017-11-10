@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Mswsock.lib")
@@ -115,6 +114,12 @@ int __cdecl main(int argc, char **argv)
 			printf("recv failed with error: %d\n", WSAGetLastError());
 
 	} while (iResult > 0);
+
+
+	/*const char *inet_ntop(int af, const void *src,
+		char *dst, socklen_t size);
+
+	int inet_pton(int af, const char *src, void *dst);*/
 
 	// cleanup
 	closesocket(ConnectSocket);
