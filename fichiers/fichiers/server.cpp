@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <string>
-
+#include <cstring>
 using namespace std;
 
 // Need to link with Ws2_32.lib
@@ -60,27 +60,29 @@ int __cdecl main(void)
 	printf("server has started...\n");
 	bool validIp = false; 
 	bool validPort = false;
-	string ip = "";
-	int port = 0;
+
+
+	string ip;
+	char port[5] = "";
 	//use get_s instead of cin to avoid shenanigans
 	while (!validIp){
 		printf("Enter your IP address: \n");
-		cin >> ip;
+		//char* isLegit = fgets(ip, 15, stdin);
+		getline(std::cin, ip);
 		struct sockaddr_in sa;
 		if (inet_pton(AF_INET, ip.c_str(), &(sa.sin_addr)) == 1) {
 			validIp = true; 
+		
 		}
 	}
 
 	while (!validPort) {
 		printf("Enter your port address: \n");
-		cin >> port;
-		if (port >= 5000 && port <= 5050) {
+		gets_s(port, 5);
+		if (atoi(port) >= 5000 && atoi(port) <= 5050) {
 			validPort = true;
 		}
 	}
-
-	
 
 	if (ListenSocket == INVALID_SOCKET) {
 		printf("socket failed with error: %ld\n", WSAGetLastError());
