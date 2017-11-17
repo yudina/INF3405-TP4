@@ -1,0 +1,8 @@
+﻿  Main.cpp
+Main.cpp(63): warning C4996: 'inet_ntoa': Use inet_ntop() or InetNtop() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+  C:\Program Files (x86)\Windows Kits\10\Include\10.0.15063.0\um\winsock2.h(1848): note: voir la déclaration de 'inet_ntoa'
+  Génération de code en cours
+  All 6 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Fin de la génération du code
+  Lab301.vcxproj -> C:\TEMP\Lab3_Code_Source_A2017_04\Lab3_Code_Source\Lab3_Clients\Release\Lab301.exe
+  Lab301.vcxproj -> C:\TEMP\Lab3_Code_Source_A2017_04\Lab3_Code_Source\Lab3_Clients\Release\Lab301.pdb (Full PDB)
