@@ -156,7 +156,6 @@ int __cdecl main(int argc, char **argv)
 		printf("Erreur de reception : %d\n", WSAGetLastError());
 	}
 
-
 	//----------------------------
 	// Demander à l'usager un mot a envoyer au serveur
 	printf("Saisir un message de moins de 200 caracteres pour envoyer au serveur: ");
@@ -179,7 +178,7 @@ int __cdecl main(int argc, char **argv)
 
 	//------------------------------
 	// Maintenant, on va recevoir l' information envoyée par le serveur
-	iResult = recv(leSocket, motRecu, strlen(motEnvoye), 0);
+	iResult = recv(leSocket, motRecu, 200, 0);
 	if (iResult > 0) {
 		printf("Nombre d'octets recus: %d\n", iResult);
 		motRecu[iResult] = '\0';

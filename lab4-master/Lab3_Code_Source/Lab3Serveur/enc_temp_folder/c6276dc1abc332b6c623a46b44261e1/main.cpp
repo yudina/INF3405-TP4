@@ -287,6 +287,7 @@ DWORD WINAPI EchoHandler(void* sd_)
 				string good = "goodCredentials";
 				strcpy(outBuffer, good.c_str());
 				int sent = send(sd, outBuffer, strlen(outBuffer), 0);
+				cout << to_string(sent) + "octets envoyés de credentials eeeeeeeeeeeeeeeeeeeee" << endl;
 			}
 			else {
 				string bad = "badCredentials";
