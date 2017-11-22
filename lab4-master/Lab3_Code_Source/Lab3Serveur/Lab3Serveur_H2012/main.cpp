@@ -16,6 +16,8 @@
 
 using namespace std;
 
+const string PASSWORDKEY = "$password=";
+const string USERNAMEKEY = "$username=";
 // link with Ws2_32.lib
 #pragma comment( lib, "ws2_32.lib" )
 
@@ -266,13 +268,34 @@ DWORD WINAPI EchoHandler(void* sd_)
 		while (readBytes > 0) {
 			cout << "Received " << readBytes << " bytes from client." << endl;
 			cout << "Received " << readBuffer << " from client." << endl;
-			if (string(readBuffer).find("$username=") != std::string::npos) {
-				validateCredentials(string(readBuffer).substr(string(readBuffer).find("$username=", string(readBuffer).length())),
-					"PASSWORD HERE");
-				memset(readBuffer, 0, sizeof readBuffer);
-			}
+			
+			if (string(readBuffer).find(USERNAMEKEY) != std::string::npos &&
+				string(readBuffer).find(PASSWORDKEY) != std::string::npos) { // condition to check credentials 
+				
+				int usernameStartIndex = string(readBuffer).find(USERNAMEKEY) + string(USERNAMEKEY).length() ;
+				int usernameEndIndex = string(readBuffer).find(PASSWORDKEY) - +string(PASSWORDKEY).length();
+				int passwordStartIndex = string(readBuffer).find(PASSWORDKEY) + string(PASSWORDKEY).length() ;
+				int passwordEndIndex = string(readBuffer).length() - 2;
+			
+				string username = string(readBuffer).substr(usernameStartIndex, usernameEndIndex);
+				string password = string(readBuffer).substr(passwordStartIndex, passwordEndIndex);				
+
+				bool goodCredentials = validateCredentials(username,password);
+
+				if (goodCredentials) {
+					string good = "goodCredentials";
+					cout << sizeof(good) << endl;
+					send(sd, good.c_str(), sizeof(good), 0);
+				}
+				else {
+					string bad = "badCredentials";
+					send(sd, bad.c_str(), sizeof(bad), 0);
+				}
+				}
 			DoSomething(readBuffer, outBuffer);
 			send(sd, outBuffer, readBytes, 0);
+			// clear buffer & continue reading 
+			memset(readBuffer, 0, sizeof(readBuffer));
 			readBytes = recv(sd, readBuffer, 200, 0);
 		}
 		if (readBytes == SOCKET_ERROR) {
@@ -294,6 +317,6 @@ void DoSomething( char *src, char *dest )
 boolean validateCredentials(string username, string password)
 {
 	//to do 
-	return false;
+	return true;
 }
 

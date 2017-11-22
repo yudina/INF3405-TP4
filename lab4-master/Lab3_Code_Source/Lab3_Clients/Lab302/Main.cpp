@@ -10,6 +10,9 @@
 
 using namespace std;
 
+const string PASSWORDKEY = "$password=";
+const string USERNAMEKEY = "$username=";
+
 // Link avec ws2_32.lib
 #pragma comment(lib, "ws2_32.lib")
 
@@ -131,7 +134,9 @@ int __cdecl main(int argc, char **argv)
 	printf("Enter your password: \n");
 	getline(std::cin, password);
 
-	iResult = send(leSocket, username.c_str(), strlen(username.c_str()), 0);
+	string userCredentials = USERNAMEKEY + username + PASSWORDKEY + password;
+
+	iResult = send(leSocket, userCredentials.c_str(), strlen(userCredentials.c_str()), 0);
 	if (iResult == SOCKET_ERROR) {
 		printf("Erreur du send: %d\n", WSAGetLastError());
 		closesocket(leSocket);
