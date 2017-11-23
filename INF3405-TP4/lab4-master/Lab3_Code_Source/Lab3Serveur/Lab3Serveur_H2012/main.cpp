@@ -28,8 +28,8 @@ const char msgDB[] = "msgDB.txt";
 // External functions
 extern DWORD WINAPI EchoHandler(void* sd_);
 extern boolean validateCredentials(string username, string password);
-extern string formatMessage(string msg, string username);
-extern void addMessageToDB(string msg, string username);
+extern string formatMessage(string msg, string username, string port, string ip);
+extern void addMessageToDB(string msg, string username, string port, string ip);
 extern void sendFifteenLatestMessages(SOCKET sd);
 extern vector<string> getLastestMessages();
 
@@ -267,8 +267,8 @@ DWORD WINAPI EchoHandler(void* sd_)
 	//132.207.29.118
 	SOCKET sd = (SOCKET)sd_;
 
-	string mess = formatMessage("message", "olivia");
-	cout << mess << endl;
+	//string mess = formatMessage("message", "olivia");
+	//cout << mess << endl;
 
 	// Read Data from client
 	char readBuffer[200], outBuffer[200];
@@ -368,8 +368,8 @@ string formatMessage(string msg, string username, string port, string ip)
 	return msg + '\n';
 }
 
-void addMessageToDB(string msg, string username) {
-	string formattedMessageToAdd = formatMessage(msg, username);
+void addMessageToDB(string msg, string username, string port, string ip) {
+	string formattedMessageToAdd = formatMessage(msg, username, port, ip);
 	fstream workFileWrite(msgDB, ios_base::app | ios_base::out);
 	workFileWrite << formattedMessageToAdd;
 }
