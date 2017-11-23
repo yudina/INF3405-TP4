@@ -265,7 +265,7 @@ int main(void)
 
 DWORD WINAPI EchoHandler(void* sd_)
 {
-	//132.207.29.126
+	//132.207.29.118
 	SOCKET sd = (SOCKET)sd_;
 
 	string mess = formatMessage("message", "olivia");
@@ -329,15 +329,27 @@ void sendFifteenLatestMessages(SOCKET sd) {
 	char sendBuffer[200];
 	memset(sendBuffer, 0, 200);
 	int i = 0;
+	if (toSend.empty()) {
+		send(sd, sendBuffer, 200, 0);
+		return;
+	}
+
 	for (int i = 0; i < toSend.size(); i++) {
 		toSend.at(i) = toSend.at(i) + '\n'; // each message will be on its own line
-		if (i == toSend.size()-1) {	
-			toSend.at(i) += '$'; // append end signal to last msg 
-		}
 		memset(sendBuffer, 0, 200);
 		strcpy(sendBuffer, toSend.at(i).c_str());
-		cout << "Sending messages" << endl;
-		send(sd, sendBuffer, strlen(toSend.at(i).c_str()), 0);
+		
+		if (i == toSend.size() - 1) {
+			sendBuffer[toSend.at(i).size()] = '\0'; // add nul to signal last message
+			send(sd, sendBuffer, strlen(toSend.at(i).c_str())+1, 0);
+			cout << "sending " + string(sendBuffer) << endl;
+			memset(sendBuffer, 0, 200);
+		}
+		else {
+			send(sd, sendBuffer, strlen(toSend.at(i).c_str()), 0);
+			cout << "sending " + string(sendBuffer) << endl;
+			memset(sendBuffer, 0, 200);
+		}
 	}
 }
 

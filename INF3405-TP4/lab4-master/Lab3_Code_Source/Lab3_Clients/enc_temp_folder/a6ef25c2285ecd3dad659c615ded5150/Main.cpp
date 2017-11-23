@@ -187,12 +187,7 @@ int __cdecl main(int argc, char **argv)
 			if (latestsMsgs.size() > 0) {
 				latestsMsgs = latestsMsgs.substr(0, latestsMsgs.size() - 1); // remove end signal
 			}
-			if (!latestsMsgs.empty()) {
-				cout << "Here is a log of recent messages: " + latestsMsgs << endl;
-			}
-			else {
-				cout << "There are no messages in recent history. You're probably the first user.  " + latestsMsgs << endl;
-			}
+			cout << "Here is a log of recent messages: " + latestsMsgs << endl;
 
 		}
 
