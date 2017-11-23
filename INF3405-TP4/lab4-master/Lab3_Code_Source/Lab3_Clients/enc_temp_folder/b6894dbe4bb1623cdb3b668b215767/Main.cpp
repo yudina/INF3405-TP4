@@ -174,7 +174,7 @@ int __cdecl main(int argc, char **argv)
 
 		if (msg == "goodCredentials") {
 			goodCredentials = true;
-			// on recoit les 15 messages (ou moins) les plus récents
+			// on recoit les 15 messages les plus récents
 			readBytes = recv(leSocket, motRecu, 200, 0);
 			string latestsMsgs;
 			latestsMsgs += motRecu;
