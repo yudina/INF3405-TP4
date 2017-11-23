@@ -232,7 +232,6 @@ int main(void)
 		return 1;
 	}
 
-
 	printf("En attente des connections des clients sur le port %d...\n\n", ntohs(service.sin_port));
 
 	while (true) {
@@ -341,18 +340,18 @@ void sendFifteenLatestMessages(SOCKET sd) {
 	}
 }
 
-string formatMessage(string msg, string username)
+string formatMessage(string msg, string username, string port, string ip)
 {
 	time_t t = time(0);   // get time now
 	struct tm * now = localtime(&t);
-
 	string currentTime = "-" + to_string(now->tm_year + 1900) + "-" + to_string(now->tm_mon + 1) + "-" + to_string(now->tm_mday) + "@" + to_string(now->tm_hour) + ":" + to_string(now->tm_min);
 
 	msg.insert(0, currentTime);
 	msg.insert(0, "[");
 	msg.insert(currentTime.size() + 1, "]: ");
+	msg.insert(1, port);
+	msg.insert(1, ip + ":");
 	msg.insert(1, username + " - ");
-	//insert port and address too
 
 	return msg + '\n';
 }
