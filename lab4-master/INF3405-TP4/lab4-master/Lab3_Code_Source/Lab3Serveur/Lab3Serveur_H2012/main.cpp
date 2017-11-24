@@ -160,8 +160,6 @@ int main(void)
 	//----------------------
 	// Initialize Winsock.
 
-	cout << formatMessage("messagggeeee", "userrrr", "5000", "123.213.43.31") << endl;
-
 	WSADATA wsaData;
 	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != NO_ERROR) {
@@ -286,8 +284,8 @@ int main(void)
 
 		if (sd != INVALID_SOCKET) {
 			cout << "Connection acceptee De : " <<
-				inet_ntoa(sinRemote.sin_addr) << ":" <<
-				ntohs(sinRemote.sin_port) << "." <<
+				ip << ":" <<
+				port << "." <<
 				endl;
 
 			DWORD nThreadID;
@@ -346,7 +344,7 @@ DWORD WINAPI EchoHandler(void* socket_ip_port)
 					string good = "goodCredentials";
 					memset(outBuffer, 0, 2000);
 					strcpy(outBuffer, good.c_str());
-					cout << "Sending " + string(outBuffer) << endl;
+					cout << "Sending " + string(outBuffer)  + " to " + username<< endl;
 					send(sd, outBuffer, 2000, 0);
 					currentUsername = username;
 					////// send 15 latest messages (or less if applicable) 
@@ -356,6 +354,7 @@ DWORD WINAPI EchoHandler(void* socket_ip_port)
 					string bad = "badCredentials";
 					memset(outBuffer, 0, 2000);
 					strcpy(outBuffer, bad.c_str());
+					cout << "Sending " + string(outBuffer) + " to " + username << endl;
 					send(sd, outBuffer, 2000, 0);
 				}
 			}
@@ -363,15 +362,17 @@ DWORD WINAPI EchoHandler(void* socket_ip_port)
 				// TO DO : add message to DB 
 				// TO DO : call multicast function 
 
-				string msg = "We got a message \n";
+				string msg = formatMessage(readBuffer, currentUsername, to_string(port), ip) + "\n";
 
 				memset(outBuffer, 0, 2000);
 				strcpy(outBuffer, msg.c_str());
+				cout << "Sending " + string(outBuffer) + " to " + currentUsername << endl;
 				send(sd, outBuffer, 2000, 0);
 
 				cout << port << endl;
 				cout << ip << endl;
 				addMessageToDB(readBuffer, currentUsername, to_string(port), ip);
+				cout << "Multicasting " + string(outBuffer)<< endl;
 				multicast(msg);
 			}
 
@@ -379,6 +380,10 @@ DWORD WINAPI EchoHandler(void* socket_ip_port)
 			// clear buffer & continue reading 
 			memset(readBuffer, 0, 2000);
 			readBytes = recv(sd, readBuffer, 2000, 0);
+
+		}
+		if (readBytes == 0) {
+			printf("Connection closed\n");
 		}
 		if (readBytes == SOCKET_ERROR) {
 			cout << WSAGetLastErrorMessage("Echec de la reception !") << endl;
@@ -458,6 +463,7 @@ void addMessageToDB(string msg, string username, string port, string ip) {
 	else if (dwWaitResult == WAIT_ABANDONED) {
 		return;
 	}
+	ReleaseMutex(msgMutex);
 }
 
 vector<string> getLastestMessages() {
@@ -471,18 +477,25 @@ vector<string> getLastestMessages() {
 	if (dwWaitResult == WAIT_OBJECT_0) {
 		fstream workFileRead(msgDB, ios_base::in);
 		int lineCount = 0;
-		vector<string> messagesReadFromDB;
+		vector<string> messagesReadFromDBInReverse;
 		string line;
-		while (getline(workFileRead, line) && lineCount < 15)
+
+		while (getline(workFileRead, line))
 		{
+			// Store the lines in reverse order.
 			lineCount++;
-			messagesReadFromDB.push_back(line);
+			messagesReadFromDBInReverse.insert(messagesReadFromDBInReverse.begin(), line);
 		}
-		return messagesReadFromDB;
+		if (messagesReadFromDBInReverse.size() >= 15) {
+			messagesReadFromDBInReverse.resize(15);
+		}
+		ReleaseMutex(msgMutex);
+		return messagesReadFromDBInReverse;
 	}
 	else if (dwWaitResult == WAIT_ABANDONED) {
 		return {};
 	}
+	ReleaseMutex(msgMutex);
 	return {};
 
 }
@@ -536,7 +549,7 @@ boolean validateCredentials(string username, string password)
 		}
 		workFileWrite.close();
 		cout << "\n";
-
+		ReleaseMutex(userMutex);
 		return true;
 	}
 	// The thread got ownership of an abandoned mutex
@@ -544,6 +557,7 @@ boolean validateCredentials(string username, string password)
 	else if (dwWaitResult == WAIT_ABANDONED) {
 		return false;
 	}
+	ReleaseMutex(userMutex);
 	return false;
 }
 
