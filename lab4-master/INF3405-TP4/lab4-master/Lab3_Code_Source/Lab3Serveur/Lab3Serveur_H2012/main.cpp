@@ -1,6 +1,6 @@
 #undef UNICODE
 
-// IP 132.207.29.118
+// IP 132.207.29.120
 #include <winsock2.h>
 #include <iostream>
 #include <algorithm>
@@ -37,8 +37,13 @@ extern string formatMessage(string msg, string username, string port, string ip)
 extern void addMessageToDB(string msg, string username, string port, string ip);
 extern void sendFifteenLatestMessages(SOCKET sd);
 extern vector<string> getLastestMessages();
+extern void multicast(string msg);
 
-
+struct socket_info {
+	SOCKET socket;
+	string ip;
+	int port;
+} socket_ip_port;
 // List of Winsock error constants mapped to an interpretation string.
 // Note that this list must remain sorted by the error constants'
 // values, because we do a binary search on the list when looking up
@@ -272,6 +277,13 @@ int main(void)
 		// Create a SOCKET for accepting incoming requests.
 		// Accept the connection.
 		SOCKET sd = accept(ServerSocket, (sockaddr*)&sinRemote, &nAddrSize);
+		string ip = inet_ntoa(sinRemote.sin_addr);
+		int port = ntohs(sinRemote.sin_port);
+
+		socket_ip_port.ip = ip;
+		socket_ip_port.port = port;
+		socket_ip_port.socket = sd;
+
 		if (sd != INVALID_SOCKET) {
 			cout << "Connection acceptee De : " <<
 				inet_ntoa(sinRemote.sin_addr) << ":" <<
@@ -280,7 +292,7 @@ int main(void)
 
 			DWORD nThreadID;
 			connectedUsers.push_back(sd);
-			CreateThread(0, 0, EchoHandler, (void*)sd, 0, &nThreadID);
+			CreateThread(0, 0, EchoHandler, (void*)&socket_ip_port, 0, &nThreadID);
 		}
 		else {
 			cerr << WSAGetLastErrorMessage("Echec d'une connection.") <<
@@ -296,13 +308,14 @@ int main(void)
 //// EchoHandler ///////////////////////////////////////////////////////
 // Handles the incoming data by reflecting it back to the sender.
 
-DWORD WINAPI EchoHandler(void* sd_)
+DWORD WINAPI EchoHandler(void* socket_ip_port)
 {
-	//132.207.29.118
-	SOCKET sd = (SOCKET)sd_;
-
-	//string mess = formatMessage("message", "olivia");
-	//cout << mess << endl;
+	//132.207.29.120
+	SOCKET sd = (SOCKET)(*(socket_info *)(socket_ip_port)).socket;
+	string ip = (string)(*(socket_info *)(socket_ip_port)).ip;
+	int port = (int)(*(socket_info *)(socket_ip_port)).port;
+	
+	string currentUsername;
 
 	// Read Data from client
 	char readBuffer[2000], outBuffer[2000];
@@ -310,58 +323,72 @@ DWORD WINAPI EchoHandler(void* sd_)
 	memset(readBuffer, 0, 2000);
 	memset(outBuffer, 0, 2000);
 	readBytes = recv(sd, readBuffer, 2000, 0);
-	while (readBytes > 0) {
-		cout << "Received " << readBytes << " bytes from client." << endl;
-		cout << "Received " << readBuffer << " from client." << endl;
+	
+	while (true) {
+		while (readBytes > 0) {
+			cout << "Received " << readBytes << " bytes from client." << endl;
+			cout << "Received " << readBuffer << " from client." << endl;
 
-		if (string(readBuffer).find(USERNAMEKEY) != std::string::npos &&
-			string(readBuffer).find(PASSWORDKEY) != std::string::npos) { // condition to check credentials 
+			if (string(readBuffer).find(USERNAMEKEY) != std::string::npos &&
+				string(readBuffer).find(PASSWORDKEY) != std::string::npos) { // condition to check credentials 
 
-			int usernameStartIndex = string(readBuffer).find(USERNAMEKEY) + string(USERNAMEKEY).length();
-			int usernameEndIndex = string(readBuffer).find(PASSWORDKEY) - +string(PASSWORDKEY).length();
-			int passwordStartIndex = string(readBuffer).find(PASSWORDKEY) + string(PASSWORDKEY).length();
-			int passwordEndIndex = string(readBuffer).length() - 2;
+				int usernameStartIndex = string(readBuffer).find(USERNAMEKEY) + string(USERNAMEKEY).length();
+				int usernameEndIndex = string(readBuffer).find(PASSWORDKEY) - +string(PASSWORDKEY).length();
+				int passwordStartIndex = string(readBuffer).find(PASSWORDKEY) + string(PASSWORDKEY).length();
+				int passwordEndIndex = string(readBuffer).length() - 2;
 
-			string username = string(readBuffer).substr(usernameStartIndex, usernameEndIndex);
-			string password = string(readBuffer).substr(passwordStartIndex, passwordEndIndex);
+				string username = string(readBuffer).substr(usernameStartIndex, usernameEndIndex);
+				string password = string(readBuffer).substr(passwordStartIndex, passwordEndIndex);
 
-			bool goodCredentials = validateCredentials(username, password);
+				bool goodCredentials = validateCredentials(username, password);
 
-			if (goodCredentials) {
-				string good = "goodCredentials";
-				memset(outBuffer, 0, 2000);
-				strcpy(outBuffer, good.c_str());
-				cout << "Sending " + string(outBuffer) << endl;
-				send(sd, outBuffer, 2000, 0);
-				////// send 15 latest messages (or less if applicable) 
-				sendFifteenLatestMessages(sd);
+				if (goodCredentials) {
+					string good = "goodCredentials";
+					memset(outBuffer, 0, 2000);
+					strcpy(outBuffer, good.c_str());
+					cout << "Sending " + string(outBuffer) << endl;
+					send(sd, outBuffer, 2000, 0);
+					currentUsername = username;
+					////// send 15 latest messages (or less if applicable) 
+					sendFifteenLatestMessages(sd);
+				}
+				else {
+					string bad = "badCredentials";
+					memset(outBuffer, 0, 2000);
+					strcpy(outBuffer, bad.c_str());
+					send(sd, outBuffer, 2000, 0);
+				}
 			}
-			else {
-				string bad = "badCredentials";
+			else {	//// no need to check credentials... just add msg to DB & broadcast to connected clients (?) 
+				// TO DO : add message to DB 
+				// TO DO : call multicast function 
+
+				string msg = "We got a message \n";
+
 				memset(outBuffer, 0, 2000);
-				strcpy(outBuffer, bad.c_str());
+				strcpy(outBuffer, msg.c_str());
 				send(sd, outBuffer, 2000, 0);
+
+				cout << port << endl;
+				cout << ip << endl;
+				addMessageToDB(readBuffer, currentUsername, to_string(port), ip);
+				multicast(msg);
 			}
+
+			//send(sd, outBuffer, readBytes, 0);
+			// clear buffer & continue reading 
+			memset(readBuffer, 0, 2000);
+			readBytes = recv(sd, readBuffer, 2000, 0);
 		}
-		//// no need to check credentials... just add msg to DB & broadcast to connected clients (?) 
-		// TO DO : add message to DB 
-		// TO DO : call multicast function 
-
-		//send(sd, outBuffer, readBytes, 0);
-		// clear buffer & continue reading 
-		memset(readBuffer, 0, 2000);
-		readBytes = recv(sd, readBuffer, 2000, 0);
-	}
-	if (readBytes == SOCKET_ERROR) {
-		cout << WSAGetLastErrorMessage("Echec de la reception !") << endl;
+		if (readBytes == SOCKET_ERROR) {
+			cout << WSAGetLastErrorMessage("Echec de la reception !") << endl;
+		}
 	}
 
 	//closesocket(sd);
 
 	return 0;
 }
-
-
 
 void sendFifteenLatestMessages(SOCKET sd) {
 	vector<string> toSend = getLastestMessages();

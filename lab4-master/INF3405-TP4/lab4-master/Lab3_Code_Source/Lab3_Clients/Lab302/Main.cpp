@@ -12,14 +12,17 @@ using namespace std;
 
 const string PASSWORDKEY = "$password=";
 const string USERNAMEKEY = "$username=";
+bool clientIsConnected;
+SOCKET leSocket;// = INVALID_SOCKET;
 
 // Link avec ws2_32.lib
 #pragma comment(lib, "ws2_32.lib")
 
+extern DWORD WINAPI listener(LPVOID arg);
+
 int __cdecl main(int argc, char **argv)
 {
 	WSADATA wsaData;
-	SOCKET leSocket;// = INVALID_SOCKET;
 	struct addrinfo *result = NULL,
 		*ptr = NULL,
 		hints;
@@ -202,11 +205,16 @@ int __cdecl main(int argc, char **argv)
 		}
 	}
 
-	bool connected = true; //we went through all the steps to connect the client to the chat
+	clientIsConnected = true; //we went through all the steps to connect the client to the chat
+
+	HANDLE th[1];
+	DWORD thid;
+	HANDLE listeningThread = CreateThread(0, 0, listener, (LPVOID)&th[0] , 0, &thid);
+
 
 	////// chatting : ////////
 	// TO DO : make listening thread & allow user to write 
-	while (connected){
+	while (clientIsConnected){
 		printf("Saisir un message de moins de 200 caracteres pour envoyer au serveur: ");
 		gets_s(motEnvoye, 2000);
 
@@ -225,17 +233,6 @@ int __cdecl main(int argc, char **argv)
 
 		printf("Nombre d'octets envoyes : %ld\n", iResult);
 
-		//------------------------------
-		// Maintenant, on va recevoir l' information envoyée par le serveur
-		iResult = recv(leSocket, motRecu, 2000, 0);
-		if (iResult > 0) {
-			printf("Nombre d'octets recus: %d\n", iResult);
-			motRecu[iResult] = '\0';
-			printf("Le mot recu est %s\n", motRecu);
-		}
-		else {
-			printf("Erreur de reception : %d\n", WSAGetLastError());
-		}
 	}
 
 
@@ -245,5 +242,28 @@ int __cdecl main(int argc, char **argv)
 
 	printf("Appuyez une touche pour finir\n");
 	getchar();
+	return 0;
+}
+
+DWORD WINAPI listener(LPVOID arg) {
+	while (clientIsConnected) {
+		char motEnvoye[2000];
+		char motRecu[2000];
+		int readBytes;
+		string msg;
+
+		//recevoir l' information envoyée par le serveur
+		readBytes = recv(leSocket, motRecu, 2000, 0);
+		msg += motRecu;
+		while (readBytes > 0 && motRecu[readBytes - 1] != '\0') {
+			readBytes = recv(leSocket, motRecu, 2000, 0);
+			msg += motRecu;
+			printf("Nombre d'octets recus: %d\n", readBytes);
+			printf("Le mot recu est %s\n", motRecu);
+		}
+
+		cout << msg << endl;
+	}
+
 	return 0;
 }
