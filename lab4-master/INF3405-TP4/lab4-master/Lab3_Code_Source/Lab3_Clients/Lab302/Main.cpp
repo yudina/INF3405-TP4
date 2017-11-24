@@ -184,6 +184,7 @@ int __cdecl main(int argc, char **argv)
 			latestsMsgs += motRecu;
 			cout << "Login succesful!"<< endl;
 			while (readBytes > 0 && motRecu[readBytes-1] != '\0') {
+				memset(motRecu, 0, 2000);
 				readBytes = recv(leSocket, motRecu, 2000, 0);
 				latestsMsgs += motRecu;
 			}
@@ -257,7 +258,7 @@ DWORD WINAPI listener(LPVOID arg) {
 		msg += motRecu;
 		while (readBytes > 0 && motRecu[readBytes - 1] != '\0') {
 			readBytes = recv(leSocket, motRecu, 2000, 0);
-			//msg += motRecu;
+			msg += motRecu;
 		}
 
 		cout << msg << endl;
