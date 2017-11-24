@@ -1,6 +1,5 @@
 #undef UNICODE
 
-// IP 132.207.29.120
 #include <winsock2.h>
 #include <iostream>
 #include <algorithm>
@@ -37,7 +36,7 @@ extern string formatMessage(string msg, string username, string port, string ip)
 extern void addMessageToDB(string msg, string username, string port, string ip);
 extern void sendFifteenLatestMessages(SOCKET sd);
 extern vector<string> getLastestMessages();
-extern void multicast(string msg);
+extern void multicast(string msg, SOCKET source);
 
 struct socket_info {
 	SOCKET socket;
@@ -211,7 +210,6 @@ int main(void)
 	//Recuperation de l'adresse locale
 	hostent *thisHost;
 
-	printf("server has started...\n");
 	bool validIp = false;
 	bool validPort = false;
 
@@ -241,11 +239,9 @@ int main(void)
 	thisHost = gethostbyname(ip_input.c_str());
 	char* ip;
 	ip = inet_ntoa(*(struct in_addr*) *thisHost->h_addr_list);
-	printf("Adresse locale trouvee %s : \n\n", ip);
+	printf("Local address %s : \n\n", ip);
 	sockaddr_in service;
 	service.sin_family = AF_INET;
-	//service.sin_addr.s_addr = inet_addr("127.0.0.1");
-	//	service.sin_addr.s_addr = INADDR_ANY;
 	service.sin_addr.s_addr = inet_addr(ip_input.c_str());
 	service.sin_port = htons(stoi(port));
 
@@ -266,7 +262,7 @@ int main(void)
 		return 1;
 	}
 
-	printf("En attente des connections des clients sur le port %d...\n\n", ntohs(service.sin_port));
+	printf("Waiting for clients on port %d...\n\n", ntohs(service.sin_port));
 
 	while (true) {
 
@@ -283,7 +279,7 @@ int main(void)
 		socket_ip_port.socket = sd;
 
 		if (sd != INVALID_SOCKET) {
-			cout << "Connection acceptee De : " <<
+			cout << "Connected to : " <<
 				ip << ":" <<
 				port << "." <<
 				endl;
@@ -293,9 +289,8 @@ int main(void)
 			CreateThread(0, 0, EchoHandler, (void*)&socket_ip_port, 0, &nThreadID);
 		}
 		else {
-			cerr << WSAGetLastErrorMessage("Echec d'une connection.") <<
+			cerr << WSAGetLastErrorMessage("A connection failed.") <<
 				endl;
-			// return 1;
 		}
 	}
 	CloseHandle(userMutex);
@@ -308,7 +303,6 @@ int main(void)
 
 DWORD WINAPI EchoHandler(void* socket_ip_port)
 {
-	//132.207.29.120
 	SOCKET sd = (SOCKET)(*(socket_info *)(socket_ip_port)).socket;
 	string ip = (string)(*(socket_info *)(socket_ip_port)).ip;
 	int port = (int)(*(socket_info *)(socket_ip_port)).port;
@@ -322,10 +316,8 @@ DWORD WINAPI EchoHandler(void* socket_ip_port)
 	memset(outBuffer, 0, 2000);
 	readBytes = recv(sd, readBuffer, 2000, 0);
 	
-	while (true) {
 		while (readBytes > 0) {
 			cout << "Received " << readBytes << " bytes from client." << endl;
-			cout << "Received " << readBuffer << " from client." << endl;
 
 			if (string(readBuffer).find(USERNAMEKEY) != std::string::npos &&
 				string(readBuffer).find(PASSWORDKEY) != std::string::npos) { // condition to check credentials 
@@ -344,7 +336,6 @@ DWORD WINAPI EchoHandler(void* socket_ip_port)
 					string good = "goodCredentials";
 					memset(outBuffer, 0, 2000);
 					strcpy(outBuffer, good.c_str());
-					cout << "Sending " + string(outBuffer)  + " to " + username<< endl;
 					send(sd, outBuffer, 2000, 0);
 					currentUsername = username;
 					////// send 15 latest messages (or less if applicable) 
@@ -354,29 +345,20 @@ DWORD WINAPI EchoHandler(void* socket_ip_port)
 					string bad = "badCredentials";
 					memset(outBuffer, 0, 2000);
 					strcpy(outBuffer, bad.c_str());
-					cout << "Sending " + string(outBuffer) + " to " + username << endl;
 					send(sd, outBuffer, 2000, 0);
 				}
 			}
 			else {	//// no need to check credentials... just add msg to DB & broadcast to connected clients (?) 
-				// TO DO : add message to DB 
-				// TO DO : call multicast function 
-
+				// add message to DB 
+				// call multicast function to transmit message to peers
 				string msg = formatMessage(readBuffer, currentUsername, to_string(port), ip) + "\n";
-
 				memset(outBuffer, 0, 2000);
 				strcpy(outBuffer, msg.c_str());
-				cout << "Sending " + string(outBuffer) + " to " + currentUsername << endl;
 				send(sd, outBuffer, 2000, 0);
-
-				cout << port << endl;
-				cout << ip << endl;
 				addMessageToDB(readBuffer, currentUsername, to_string(port), ip);
-				cout << "Multicasting " + string(outBuffer)<< endl;
-				multicast(msg);
+				multicast(msg, sd);
 			}
 
-			//send(sd, outBuffer, readBytes, 0);
 			// clear buffer & continue reading 
 			memset(readBuffer, 0, 2000);
 			readBytes = recv(sd, readBuffer, 2000, 0);
@@ -386,11 +368,10 @@ DWORD WINAPI EchoHandler(void* socket_ip_port)
 			printf("Connection closed\n");
 		}
 		if (readBytes == SOCKET_ERROR) {
-			cout << WSAGetLastErrorMessage("Echec de la reception !") << endl;
+			cout << WSAGetLastErrorMessage("Something happened: " ) << endl;
 		}
-	}
 
-	//closesocket(sd);
+	closesocket(sd);
 
 	return 0;
 }
@@ -413,12 +394,10 @@ void sendFifteenLatestMessages(SOCKET sd) {
 		if (i == toSend.size() - 1) {
 			sendBuffer[toSend.at(i).size()] = '\0'; // add nul to signal last message
 			send(sd, sendBuffer, strlen(toSend.at(i).c_str())+1, 0);
-			cout << "sending " + string(sendBuffer) << endl;
 			memset(sendBuffer, 0, 2000);
 		}
 		else {
 			send(sd, sendBuffer, strlen(toSend.at(i).c_str()), 0);
-			cout << "sending " + string(sendBuffer) << endl;
 			memset(sendBuffer, 0, 2000);
 		}
 	}
@@ -426,10 +405,12 @@ void sendFifteenLatestMessages(SOCKET sd) {
 
 //// format message before sending if you want it to be pretty
 // sends message to all connected users
-void multicast(string msg) {
+void multicast(string msg, SOCKET source) {
 	for (int i = 0; i < connectedUsers.size(); i++) {
 		//send nul terminated message to all users 
-		send(connectedUsers[i], msg.c_str() + '\0', strlen(msg.c_str())+1, 0); 
+		if (connectedUsers[i] != source) {
+			send(connectedUsers[i], msg.c_str() + '\0', strlen(msg.c_str()) + 1, 0);
+		} 
 	}
 }
 
@@ -437,7 +418,7 @@ string formatMessage(string msg, string username, string port, string ip)
 {
 	time_t t = time(0);   // get time now
 	struct tm * now = localtime(&t);
-	string currentTime = " - " + to_string(now->tm_year + 1900) + " - " + to_string(now->tm_mon + 1) + "-" + to_string(now->tm_mday) + "@" + to_string(now->tm_hour) + ":" + to_string(now->tm_min);
+	string currentTime = " - " + to_string(now->tm_year + 1900) + " - " + to_string(now->tm_mon + 1) + "-" + to_string(now->tm_mday) + "@" + to_string(now->tm_hour) + ":" + to_string(now->tm_min) +  ":" + to_string(now->tm_sec);
 
 	msg.insert(0, currentTime);
 	msg.insert(0, "[");
@@ -522,7 +503,6 @@ boolean validateCredentials(string username, string password)
 			return -1;
 		}
 		// use existing file
-		cout << "success " << userDB << " found. \n";
 		boolean userExists = false;
 		string line;
 
@@ -544,11 +524,9 @@ boolean validateCredentials(string username, string password)
 		}
 
 		if (!userExists) {
-			cout << "Writing username to file" << endl;
 			workFileWrite << username + " " + password << endl;
 		}
 		workFileWrite.close();
-		cout << "\n";
 		ReleaseMutex(userMutex);
 		return true;
 	}
