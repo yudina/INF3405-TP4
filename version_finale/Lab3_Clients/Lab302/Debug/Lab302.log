@@ -1,0 +1,10 @@
+﻿  Main.cpp
+x:\bureau\inf3405-tp4\lab4-master\lab3_code_source\lab3_clients\lab302\main.cpp(114): warning C4996: 'inet_ntoa': Use inet_ntop() or InetNtop() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+  c:\program files (x86)\windows kits\10\include\10.0.15063.0\um\winsock2.h(1848): note: voir la déclaration de 'inet_ntoa'
+x:\bureau\inf3405-tp4\lab4-master\lab3_code_source\lab3_clients\lab302\main.cpp(115): warning C4996: 'inet_ntoa': Use inet_ntop() or InetNtop() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+  c:\program files (x86)\windows kits\10\include\10.0.15063.0\um\winsock2.h(1848): note: voir la déclaration de 'inet_ntoa'
+x:\bureau\inf3405-tp4\lab4-master\lab3_code_source\lab3_clients\lab302\main.cpp(121): warning C4996: 'inet_ntoa': Use inet_ntop() or InetNtop() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+  c:\program files (x86)\windows kits\10\include\10.0.15063.0\um\winsock2.h(1848): note: voir la déclaration de 'inet_ntoa'
+Main.obj : warning LNK4075: ' /EDITANDCONTINUE' ignoré à cause de la spécification '/SAFESEH'
+  Lab302.vcxproj -> X:\Bureau\INF3405-TP4\lab4-master\Lab3_Code_Source\Lab3_Clients\Lab302\Debug\Lab302.exe
+  Lab302.vcxproj -> X:\Bureau\INF3405-TP4\lab4-master\Lab3_Code_Source\Lab3_Clients\Lab302\Debug\Lab302.pdb (Full PDB)
